@@ -29,15 +29,15 @@ stateDiagram-v2
 | POLLING_INTERVAL_MS | watch dir check changes inteval in MS | - | 3000 |
 | DATA_STORE_HOST | postgres server endpoint | + | - |
 | DATA_STORE_PORT | postgres server port | - | 5432 |
-| DATA_STORE_DATABASE | db name | - | polygon_parts |
+| DATA_STORE_DATABASE | db name | - | yahalom |
 | DATA_STORE_USER | postgres server user name | - | postgres |
 | DATA_STORE_PASSWORD | postgres server password | - | postgres |
 | DATA_STORE_DBTYPE | data store type in geoserver | - | postgis |
-| DATA_STORE_SCHEMA | postgres schema name | - | polygon_parts |
+| DATA_STORE_SCHEMA | postgres schema name | - | public |
 | DATA_STORE_SSL | should connect to postgres with ssl | - | DISABLED |
-| DATA_STORE_NAME | data store name | + | polygon_parts |
+| DATA_STORE_NAME | data store name | + | yahalom |
 | GEOSERVER_BASE_URL | Endpoint of geoserver  | - | http://localhost:8080/geoserver |
-| POLYGON_PARTS_WORKSPACE_NAME | workspace name | - | polygon_parts |
+| POLYGON_PARTS_WORKSPACE_NAME | workspace name | - | yahalom |
 | MAX_FEATURES | limit the number of feature to receive | - | 10 |
 | NUM_DECIMALS | limit the number accuracy | - | 10 |
 | LAYER_TITLE_NAME | layer internal name | - | polygon_parts |

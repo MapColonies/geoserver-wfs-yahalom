@@ -16,44 +16,46 @@ const logger = jsLogger.default({
 });
 
 const GEOSERVER_LOCAL_PORT = '8080'; // Default port for local GeoServer instance, hard coded in deployment.yaml containerPort
-const POLLING_INTERVAL_MS = env.get('POLLING_INTERVAL_MS').default(3000).asIntPositive(); // Polling interval in milliseconds
-const GEOSERVER_BASE_URL = env.get('GEOSERVER_BASE_URL').default('http://localhost:8080/geoserver').asString();
+const POLLING _INTERVAL_MS = env.get('POLLING_INTERVAL_MS').default(3000).asIntPositive(); // Polling interval in milliseconds
+const GEOSERVER_BASE_URL = env
+  .get('GEOSERVER_BASE_URL')
+  .default('https://geoserver-manual-route-3d-dev.apps.j1lk3njp.eastus.aroapp.io/geoserver')
+  .asString();
 const GEOSERVER_LOCAL_BASE_URL = `http://localhost:${GEOSERVER_LOCAL_PORT}/geoserver`;
 
-const GEOSERVER_API_BASE_URL = env.get('GEOSERVER_API_BASE_URL').default('http://localhost:8081').asString();
-const CATALOG_MANAGER_SERVICE_URL = env.get('CATALOG_MANAGER_SERVICE_URL').default('http://localhost:8082').asString();
-
-const WORKSPACE_NAME = env.get('WORKSPACE_NAME').default('polygonParts').asString();
-const DATASTORE_NAME = env.get('DATASTORE_NAME').default('polygonParts').asString();
+const WORKSPACE_NAME = env.get('WORKSPACE_NAME').default('yahalom').asString();
+const DATASTORE_NAME = env.get('DATASTORE_NAME').default('yahalom').asString();
 const GEOSERVER_DATA_DIR = env.get('GEOSERVER_DATA_DIR').default('/data_dir').asString();
 const DATASTORE_PATH = `${GEOSERVER_DATA_DIR}/workspaces/${WORKSPACE_NAME}/${DATASTORE_NAME}`;
 
-const FEATURE_TYPES_STRINGS_BLACK_LIST = env.get('FEATURE_TYPES_STRINGS_BLACK_LIST').default(['*history$']).asJson();
-const FEATURE_TYPES_REGEX_BLACK_LIST = env
-  .get('FEATURE_TYPES_REGEX_BLACK_LIST')
-  .default(['migrations', 'history', 'polygon_parts', 'test_view'])
-  .asJson();
+const FEATURE_TYPES_STRINGS_BLACK_LIST = env.get('FEATURE_TYPES_STRINGS_BLACK_LIST').default(['layer_objects', 'sync_state', 'migrations']).asJson();
+const FEATURE_TYPES_REGEX_BLACK_LIST = env.get('FEATURE_TYPES_REGEX_BLACK_LIST').default(['.*_history$', '.*_valid$']).asJson();
 
 const GEOSERVER_USER = env.get('GEOSERVER_ADMIN_USER').default('admin').asString();
 const GEOSERVER_PASS = env.get('GEOSERVER_ADMIN_PASSWORD').default('geoserver').asString();
-const WORKSPACE_API_URL = `${GEOSERVER_API_BASE_URL}/workspaces`;
+
+const GET_WORKSPACE_API_URL = `${}/workspaces`;
 const GEOSERVER_LOCAL_RELOAD_URL = `${GEOSERVER_LOCAL_BASE_URL}/rest/reload`;
-const DATA_STORE_API_URL = `${GEOSERVER_API_BASE_URL}/dataStores/${WORKSPACE_NAME}`;
-const FEATURE_TYPES_API_URL = `${GEOSERVER_API_BASE_URL}/featureTypes/${WORKSPACE_NAME}/${DATASTORE_NAME}`;
+const DATA_STORE_API_URL = `${}/dataStores/${WORKSPACE_NAME}`;
+const FEATURE_TYPES_API_URL = `${}/featureTypes/${WORKSPACE_NAME}/${DATASTORE_NAME}`;
 const CATALOG_MANAGER_FIND_URL = `${CATALOG_MANAGER_SERVICE_URL}/records/find`;
 
-const GLOBAL_WFS_SETTING_API_URL = `${GEOSERVER_API_BASE_URL}/services/wfs/settings`;
+const GLOBAL_WFS_REST_URL = `${GEOSERVER_BASE_URL}/rest`;
+const GLOBAL_WFS_SETTING_API_URL = `${GLOBAL_WFS_REST_URL}/services/wfs/settings`;
+//const WORKSPACE_API_URL = `${GEOSERVER_LOCAL_BASE_URL}/workspaces`;
 
 // *******************GEOSERVER INITIALIZATION************************************************
 
 //Loop until validate geoserver is up
+// CHECKED!
 await checkGeoserverIsUp();
 
 //set wfs mode
+// CHECKED!
 await setWfsAsBasic();
 
 //check if workspace exists, if it doesnt - create one
-const workspaceExists = await checkWorkspace();
+const workspaceExists = await checkWorkspace(WORKSPACE_NAME);
 if (!workspaceExists) {
   await createWorkspace();
 }
@@ -70,32 +72,101 @@ await checkFeatureTypes();
 logger.info({ msg: `Env ready: Completed Geoserver initialization` });
 
 //listen to nfs changes
-if (await isDataDirExists()) {
-  const watcher = chokidar.watch(DATASTORE_PATH, {
-    persistent: true,
-    ignoreInitial: true,
-    usePolling: true, // use polling to detect changes - optimized for NFS
-    interval: POLLING_INTERVAL_MS, // how often to poll (in ms)
-    binaryInterval: POLLING_INTERVAL_MS,
+// if (await isDataDirExists()) {
+//   const watcher = chokidar.watch(DATASTORE_PATH, {
+//     persistent: true,
+//     ignoreInitial: true,
+//     usePolling: true, // use polling to detect changes - optimized for NFS
+//     interval: POLLING_INTERVAL_MS, // how often to poll (in ms)
+//     binaryInterval: POLLING_INTERVAL_MS,
+//   });
+
+//   logger.info({ msg: `starts watching ${DATASTORE_PATH} path` });
+//   watcher
+//     .on('add', async (path) => {
+//       logger.info({ msg: `File added: ${path}` });
+//       await reloadGeoServer();
+//     })
+//     .on('unlink', async (path) => {
+//       logger.info({ msg: `File removed: ${path}` });
+//       await reloadGeoServer();
+//     })
+//     .on('ready', () => logger.info('Initial scan complete. Ready for changes'))
+//     .on('error', (error) => logger.error({ msg: `Watcher error: ${error}` }));
+// } else {
+//   logger.error({ msg: `Data directory ${DATASTORE_PATH} does not exist or is not accessible` });
+//   throw new Error(`Data directory ${DATASTORE_PATH} does not exist or is not accessible`);
+// }
+// *******************************************************************
+
+/**
+ * This function will check periodically till detect that geoserver is up and than exit the method
+ */
+async function checkGeoserverIsUp() {
+  while (true) {
+    try {
+      const responseFromGs = await zx.fetch(`${GEOSERVER_BASE_URL}`, {
+        method: 'GET',
+      });
+      logger.info({
+        msg: `Got response from geoserver with status code: ${responseFromGs.status}`,
+      });
+      assertOk(responseFromGs.status === 200);
+      break;
+    } catch (error) {
+      logger.warn({
+        msg: `Failed connect to geoserver with error ${error}, will retry again`,
+      });
+      await zx.sleep(15000);
+    }
+  }
+}
+
+/**
+ * Send api request for global settings - restrict WFS protocol read-only (BASIC)
+ */
+async function setWfsAsBasic() {
+  const wfsModeResponse = await zx.fetch(GLOBAL_WFS_SETTING_API_URL, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    auth: {
+      user: GEOSERVER_USER,
+      pass: GEOSERVER_PASS,
+    },
+    body: JSON.stringify({ wfs: {
+      serviceLevel: 'BASIC',
+      maxFeatures: 1000,
+    }}),
   });
 
-  logger.info({ msg: `starts watching ${DATASTORE_PATH} path` });
-  watcher
-    .on('add', async (path) => {
-      logger.info({ msg: `File added: ${path}` });
-      await reloadGeoServer();
-    })
-    .on('unlink', async (path) => {
-      logger.info({ msg: `File removed: ${path}` });
-      await reloadGeoServer();
-    })
-    .on('ready', () => logger.info('Initial scan complete. Ready for changes'))
-    .on('error', (error) => logger.error({ msg: `Watcher error: ${error}` }));
-} else {
-  logger.error({ msg: `Data directory ${DATASTORE_PATH} does not exist or is not accessible` });
-  throw new Error(`Data directory ${DATASTORE_PATH} does not exist or is not accessible`);
+  logger.info({ msg: await wfsModeResponse.text() });
+  assertEqual(wfsModeResponse.status, 200);
+  logger.info({
+    msg: `Set WFS service level into 'BASIC' - read only mode with status code: ${wfsModeResponse.status}`,
+  });
 }
-// *******************************************************************
+
+/**
+ * Send api to check if the workspace exists
+ */
+async function checkWorkspace(workspaceName) {
+  const getWorkspaceResp = await zx.fetch(`${WORKSPACE_API_URL}/${WORKSPACE_NAME}`, {
+    method: 'GET',
+  });
+
+  logger.info({ msg: await getWorkspaceResp.text() });
+
+  await zx.sleep(1000);
+  if (getWorkspaceResp.status === 200) {
+    return true;
+  } else if (getWorkspaceResp.status === 404) {
+    return false;
+  } else {
+    throw new Error(`Unexpected status code: ${getWorkspaceResp.status}`);
+  }
+}
 
 async function reloadGeoServer() {
   try {
@@ -128,49 +199,6 @@ async function isDataDirExists() {
   } catch (err) {
     logger.error({ msg: `Error checking data directory ${DATASTORE_PATH}: ${err.message}` });
     throw err;
-  }
-}
-
-/**
- * This function will check periodically till detect that geoserver is up and than exit the method
- */
-async function checkGeoserverIsUp() {
-  while (true) {
-    try {
-      const responseFromGs = await zx.fetch(`${GEOSERVER_BASE_URL}`, {
-        method: 'GET',
-      });
-      logger.info({
-        msg: `Got response from geoserver with status code: ${responseFromGs.status}`,
-      });
-      assertOk(responseFromGs.status === 200);
-      break;
-    } catch (error) {
-      logger.warn({
-        msg: `Failed connect to geoserver with error ${error}, will retry again`,
-      });
-      await zx.sleep(15000);
-    }
-  }
-}
-
-/**
- * Send api to check if the workspace exists
- */
-async function checkWorkspace() {
-  const getWorkspaceResp = await zx.fetch(`${WORKSPACE_API_URL}/${WORKSPACE_NAME}`, {
-    method: 'GET',
-  });
-
-  logger.info({ msg: await getWorkspaceResp.text() });
-
-  await zx.sleep(1000);
-  if (getWorkspaceResp.status === 200) {
-    return true;
-  } else if (getWorkspaceResp.status === 404) {
-    return false;
-  } else {
-    throw new Error(`Unexpected status code: ${getWorkspaceResp.status}`);
   }
 }
 
@@ -282,25 +310,6 @@ async function checkFeatureTypes() {
   await zx.sleep(1000);
 }
 
-/**
- * Send api request for global settings - restrict WFS protocol read-only (BASIC)
- */
-async function setWfsAsBasic() {
-  const wfsModeResponse = await zx.fetch(GLOBAL_WFS_SETTING_API_URL, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ serviceLevel: 'BASIC' }),
-  });
-
-  logger.info({ msg: await wfsModeResponse.text() });
-  assertEqual(wfsModeResponse.status, 200);
-  logger.info({
-    msg: `Set WFS service level into 'BASIC' - read only mode with status code: ${wfsModeResponse.status}`,
-  });
-}
-
 async function getAvailableFeatureTypes() {
   const listAvailableParams = new URLSearchParams();
   listAvailableParams.append('list', 'available');
@@ -338,24 +347,8 @@ async function mapNativeNameToLayerName(availableNames) {
   const configuredLayers = await getConfiguredFeatureTypes();
   const layersMapping = await Promise.all(
     availableNames.map(async (nativeName) => {
-      const { productId, productType } = splitProductIdAndType(nativeName);
+      const layerName = splitNativeLayer(nativeName);
       try {
-        const response = await zx.fetch(CATALOG_MANAGER_FIND_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ metadata: { productId, productType } }),
-        });
-        const layerDetails = await response.json();
-        if (layerDetails.length !== 1) {
-          throw new Error(`Expected exactly one result for ${nativeName}, but got ${layerDetails.length}`);
-        }
-        const fetchedProductId = layerDetails[0].metadata.productId;
-        const fetchedProductType = layerDetails[0].metadata.productType;
-
-        const layerName = `${fetchedProductId}-${fetchedProductType}`;
-
         /* getAvailable returns the tableNames. 
       Due to the fact that we are publishing the features in a different name from 
       the tableName, the available returns  some already published layers
@@ -374,13 +367,12 @@ async function mapNativeNameToLayerName(availableNames) {
   return layersMapping.filter((result) => result);
 }
 
-function splitProductIdAndType(name) {
-  const lastUnderscoreIndex = name.lastIndexOf('_');
+function splitNativeLayer(name) {
+  const lastUnderscoreIndex = name.indexOf('_');
 
-  const productId = name.slice(0, lastUnderscoreIndex);
-  const productType = findProductType(name.slice(lastUnderscoreIndex + 1));
-
-  return { productId, productType };
+  name.slice(0, lastUnderscoreIndex);
+  const layerName = name.slice(lastUnderscoreIndex + 1);
+  return layerName;
 }
 
 function findProductType(input) {
