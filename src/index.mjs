@@ -170,11 +170,7 @@ async function checkWorkspace() {
 }
 
 async function createWorkspace() {
-  const createWorkspaceBody = {
-    name: WORKSPACE_NAME,
-  };
-
-  const createWorkspaceResp = await geoServerClient.createWorkspace(createWorkspaceBody);
+  const createWorkspaceResp = await geoServerClient.createWorkspace(WORKSPACE_NAME);
 
   logger.info({ msg: await createWorkspaceResp.text() });
 
@@ -190,7 +186,7 @@ async function createWorkspace() {
  * Send api to check if the workspace exists, if not create one
  */
 async function checkDataStore() {
-  const getDataStoreResp = await geoServerClient.getDataStore();
+  const getDataStoreResp = await geoServerClient.getDataStore(DATASTORE_NAME);
 
   logger.debug({ msg: await getDataStoreResp.text() });
 
@@ -205,11 +201,7 @@ async function checkDataStore() {
 }
 
 async function createDataStore() {
-  const createDataStoreBody = {
-    name: DATASTORE_NAME,
-  };
-
-  const createDataStoreResp = await geoServerClient.createDataStore(createDataStoreBody);
+  const createDataStoreResp = await geoServerClient.createDataStore(DATASTORE_NAME);
 
   logger.info({ msg: await createDataStoreResp.text() });
 
@@ -261,7 +253,7 @@ async function checkFeatureTypes() {
  * Send api request for global settings - restrict WFS protocol read-only (BASIC)
  */
 async function setWfsAsBasic() {
-  const wfsModeResponse = await geoServerClient.setWfsServiceLevel('BASIC');
+  const wfsModeResponse = await geoServerClient.setWfsServiceLevelToBasic();
 
   logger.info({ msg: await wfsModeResponse.text() });
   assertOk(wfsModeResponse.status === 200);
