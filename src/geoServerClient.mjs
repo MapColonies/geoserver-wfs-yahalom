@@ -1,12 +1,11 @@
 import * as zx from 'zx';
 
 export class GeoServerClient {
-  constructor(geoserverBaseUrl, geoserverLocalBaseUrl, geoserverApiBaseUrl, workspaceName, dataStoreName, user, password) {
-    this.geoserverBaseUrl = geoserverBaseUrl;
+  constructor(geoserverBaseUrl, geoserverLocalBaseUrl, workspaceName, dataStoreName, user, password) {
     this.workspaceName = workspaceName;
     this.dataStoreName = dataStoreName;
     this.authHeader = 'Basic ' + Buffer.from(`${user}:${password}`).toString('base64');
-    this.restApiBaseUrl = `${geoserverApiBaseUrl}/rest`;
+    this.restApiBaseUrl = `${geoserverBaseUrl}/rest`;
     this.workspaceApiUrl = `${this.restApiBaseUrl}/workspaces`;
     this.dataStoreApiUrl = `${this.workspaceApiUrl}/${workspaceName}/datastores`;
     this.featureTypesApiUrl = `${this.dataStoreApiUrl}/${dataStoreName}/featuretypes`;

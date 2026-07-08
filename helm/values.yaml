@@ -39,7 +39,7 @@ imagePullPolicy: Always
 image:
   geoserverRepository: geoserver-os
   geoserverTag: "latest"
-  sidecarRepository: pp-geoserver-side-car
+  sidecarRepository: yahalom-geoserver-side-car
   sidecarTag: "latest"
 
 updateInterval: 10000

@@ -24,9 +24,6 @@ const GEOSERVER_BASE_URL = env
   .asString();
 const GEOSERVER_LOCAL_BASE_URL = `http://localhost:${GEOSERVER_LOCAL_PORT}/geoserver`;
 
-const GEOSERVER_API_BASE_URL = env.get('GEOSERVER_API_BASE_URL').default('http://localhost:8081').asString();
-const CATALOG_MANAGER_SERVICE_URL = env.get('CATALOG_MANAGER_SERVICE_URL').default('http://localhost:8082').asString();
-
 const WORKSPACE_NAME = env.get('WORKSPACE_NAME').default('yahalom').asString();
 const DATASTORE_NAME = env.get('DATASTORE_NAME').default('yahalom').asString();
 const GEOSERVER_DATA_DIR = env.get('GEOSERVER_DATA_DIR').default('/data_dir').asString();
@@ -41,7 +38,6 @@ const GEOSERVER_PASS = env.get('GEOSERVER_ADMIN_PASSWORD').default('geoserver').
 const geoServerClient = new GeoServerClient(
   GEOSERVER_BASE_URL,
   GEOSERVER_LOCAL_BASE_URL,
-  GEOSERVER_API_BASE_URL,
   WORKSPACE_NAME,
   DATASTORE_NAME,
   GEOSERVER_USER,
@@ -51,25 +47,67 @@ const geoServerClient = new GeoServerClient(
 // *******************GEOSERVER INITIALIZATION************************************************
 
 //Loop until validate geoserver is up
-await checkGeoserverIsUp();
+try {
+  logger.info({ msg: `Checking if GeoServer is up on ${GEOSERVER_BASE_URL}...` });
+  await checkGeoserverIsUp();
+} catch (error) {
+  logger.error({ msg: `Failed to connect to GeoServer: ${error.message}, ${error}` });
+  throw error;
+}
 
 //set wfs mode
-await setWfsAsBasic();
+try {
+  logger.info({ msg: `Setting WFS service level to BASIC...` });
+  await setWfsAsBasic();
+} catch (error) {
+  logger.error({ msg: `Failed to set WFS service level to BASIC: ${error.message}, ${error}` });
+  throw error;
+}
 
 //check if workspace exists, if it doesnt - create one
-const workspaceExists = await checkWorkspace();
-if (!workspaceExists) {
-  await createWorkspace();
+try {
+  logger.info({ msg: `Checking if workspace ${WORKSPACE_NAME} exists...` });
+  const workspaceExists = await checkWorkspace();
+  if (!workspaceExists) {
+    try {
+      logger.info({ msg: `Workspace ${WORKSPACE_NAME} does not exist. Creating...` });
+      await createWorkspace();
+    } catch (error) {
+      logger.error({ msg: `Failed to create workspace: ${error.message}, ${error}` });
+      throw error;
+    }
+  }
+} catch (error) {
+  logger.error({ msg: `Failed to check workspace existence: ${error.message}, ${error}` });
+  throw error;
 }
 
 //check if dataStore exists, if it doesnt - create one
-const dataStoreExists = await checkDataStore();
-if (!dataStoreExists) {
-  await createDataStore();
+try {
+  logger.info({ msg: `Checking if data store ${DATASTORE_NAME} exists...` });
+  const dataStoreExists = await checkDataStore();
+  if (!dataStoreExists) {
+    try {
+      logger.info({ msg: `Data store ${DATASTORE_NAME} does not exist. Creating...` });
+      await createDataStore();
+    } catch (error) {
+      logger.error({ msg: `Failed to create data store: ${error.message}, ${error}` });
+      throw error;
+    }
+  }
+} catch (error) {
+  logger.error({ msg: `Failed to check data store existence: ${error.message}, ${error}` });
+  throw error;
 }
 
 //check featureLayers and publish them if needed
-await checkFeatureTypes();
+try {
+  logger.info({ msg: `Checking and publishing feature types if needed...` });
+  await checkFeatureTypes();
+} catch (error) {
+  logger.error({ msg: `Failed to check and publish feature types: ${error.message}, ${error}` });
+  throw error;
+}
 
 logger.info({ msg: `Env ready: Completed Geoserver initialization` });
 
@@ -93,7 +131,7 @@ if (await isDataDirExists()) {
       logger.info({ msg: `File removed: ${path}` });
       await reloadGeoServer();
     })
-    .on('ready', () => logger.info('Initial scan complete. Ready for changes'))
+    .on('ready', () => logger.info({ msg: 'Initial scan complete. Ready for changes' }))
     .on('error', (error) => logger.error({ msg: `Watcher error: ${error}` }));
 } else {
   logger.error({ msg: `Data directory ${DATASTORE_PATH} does not exist or is not accessible` });
@@ -171,8 +209,8 @@ async function checkWorkspace() {
 
 async function createWorkspace() {
   const createWorkspaceResp = await geoServerClient.createWorkspace(WORKSPACE_NAME);
-
-  logger.info({ msg: await createWorkspaceResp.text() });
+  const responseText = await createWorkspaceResp.text();
+  logger.info({ msg: responseText });
 
   assertOk(createWorkspaceResp.status === 201);
   logger.info({
@@ -187,8 +225,8 @@ async function createWorkspace() {
  */
 async function checkDataStore() {
   const getDataStoreResp = await geoServerClient.getDataStore(DATASTORE_NAME);
-
-  logger.debug({ msg: await getDataStoreResp.text() });
+  const responseText = await getDataStoreResp.text();
+  logger.info({ msg: responseText });
 
   await zx.sleep(1000);
   if (getDataStoreResp.status === 200) {
@@ -221,7 +259,7 @@ async function checkFeatureTypes() {
   const mappedLayerNames = await mapNativeNameToLayerName(availableNames);
 
   if (mappedLayerNames.length === 0) {
-    logger.info(' There are no layers to publish! ');
+    logger.info({ msg: ' There are no layers to publish! ' });
   } else {
     const postRequests = mappedLayerNames.map(async (entity) => {
       try {
@@ -231,10 +269,10 @@ async function checkFeatureTypes() {
             `Failed to POST for table:${entity.nativeName} with layerName: ${entity.layerName}: ${response.status} ${response.statusText}`
           );
         }
-        logger.info(`Successfully posted for table:${entity.nativeName} with layerName: ${entity.layerName}`);
+        logger.info({ msg: `Successfully posted for table:${entity.nativeName} with layerName: ${entity.layerName}` });
       } catch (error) {
         // Log detailed error message for the failed request
-        logger.error(`Error posting for table:${entity.nativeName} with layerName: ${entity.layerName}:`, error);
+        logger.error({ msg: `Error posting for table:${entity.nativeName} with layerName: ${entity.layerName}: ${error}` });
         throw error; // Re-throw the error to ensure it is caught by Promise.all
       }
     });
@@ -242,7 +280,7 @@ async function checkFeatureTypes() {
       await Promise.all(postRequests);
       logger.info({ msg: 'All POST requests were successful' });
     } catch (error) {
-      logger.error(`One or more POST requests failed: ${error}`);
+      logger.error({ msg: `One or more POST requests failed: ${error}` });
       throw Error(error);
     }
   }
@@ -263,7 +301,12 @@ async function setWfsAsBasic() {
 }
 
 async function getAvailableFeatureTypes() {
-  const availableLayers = await geoServerClient.getFeatureTypes('available');
+  try {
+    const availableLayers = await geoServerClient.getFeatureTypes('available');
+  } catch (error) {
+    logger.error({ msg: `Error fetching available feature types: ${error.message}, ${error}` });
+    throw error; // Re-throw the error to ensure it is caught by the caller
+  }
   const availableNames = availableLayers
     .filter((layer) => {
       const isInBlacklist = FEATURE_TYPES_STRINGS_BLACK_LIST.includes(layer.name);
@@ -286,7 +329,12 @@ async function getConfiguredFeatureTypes() {
 }
 
 async function mapNativeNameToLayerName(availableNames) {
-  const configuredLayers = await getConfiguredFeatureTypes();
+  try {
+    const configuredLayers = await getConfiguredFeatureTypes();
+  } catch (error) {
+    logger.error({ msg: `Error fetching configured feature types: ${error.message}, ${error}` });
+    throw error; // Re-throw the error to ensure it is caught by the caller
+  }
   const layersMapping = await Promise.all(
     availableNames.map(async (nativeName) => {
       const layerName = splitNativeLayer(nativeName);
@@ -300,7 +348,7 @@ async function mapNativeNameToLayerName(availableNames) {
         }
         return undefined;
       } catch (error) {
-        logger.error(`Error processing ${nativeName}: ${error.message}`);
+        logger.error({ msg: `Error processing ${nativeName}: ${error.message}` });
         return undefined;
       }
     })
