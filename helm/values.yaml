@@ -11,9 +11,9 @@ global:
 mclabels:
   #environment: development
   component: backend
-  partOf: serving
-  owner: raster
-  gisDomain: raster
+  partOf: yahalom-serving
+  owner: 3d
+  gisDomain: 3d
   prometheus:
     enabled: true
     port: 9117
@@ -47,7 +47,7 @@ updateInterval: 10000
 replicaCount: 1
 
 nameOverride:
-fullnameOverride: pp-geoserver
+fullnameOverride: yahalom-geoserver
 
 initialMemory: "128M"
 maxMemory: "756M"
@@ -168,10 +168,8 @@ sideCar:
         - '.*_valid$'
       tableNameStrings:
         - migrations
-        - history
-        - polygon_parts
-        - base_parts
-        - validation_parts
+        - layer_objects
+        - sync_state
 
 nginx:
   enabled: true
@@ -179,7 +177,10 @@ nginx:
   fullnameOverride: ""
   image:
     repository: common/nginx
-    tag: 'v2.1.6'
+  mclabels:
+    gisDomain: 3d
+    partOf: yahalom-serving
+    owner: 3d
   extensions:
     server:
       enabled: true
