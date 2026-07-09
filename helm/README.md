@@ -1,4 +1,4 @@
-# Helm suite for complete geoserver - polygon parts 
+# Helm suite for complete geoserver - WFS for sync-layrs
 [Home](../README.md)
 * The helm provides ready to use polygon parts serving by WFS protocol
 * The initialization use side car to prepare the geoserver to be ready to uses with all relevant data

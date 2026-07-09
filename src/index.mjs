@@ -1,11 +1,12 @@
 import * as chokidar from 'chokidar';
 import { stat } from 'fs/promises';
 import * as zx from 'zx';
-import { strictEqual as assertEqual, ok as assertOk } from 'assert';
+import { ok as assertOk } from 'assert';
 import env from 'env-var';
 import 'dotenv/config';
 import jsLogger from '@map-colonies/js-logger';
 import { ProductType } from '@map-colonies/mc-model-types';
+import { GeoServerClient } from './geoServerClient.mjs';
 
 // *******************************************************************
 // *************** initialization of environ variables ***************
@@ -17,55 +18,93 @@ const logger = jsLogger.default({
 
 const GEOSERVER_LOCAL_PORT = '8080'; // Default port for local GeoServer instance, hard coded in deployment.yaml containerPort
 const POLLING_INTERVAL_MS = env.get('POLLING_INTERVAL_MS').default(3000).asIntPositive(); // Polling interval in milliseconds
-const GEOSERVER_BASE_URL = env.get('GEOSERVER_BASE_URL').default('http://localhost:8080/geoserver').asString();
+const GEOSERVER_BASE_URL = env.get('GEOSERVER_BASE_URL').default('https://localhost/geoserver').asString();
 const GEOSERVER_LOCAL_BASE_URL = `http://localhost:${GEOSERVER_LOCAL_PORT}/geoserver`;
 
-const GEOSERVER_API_BASE_URL = env.get('GEOSERVER_API_BASE_URL').default('http://localhost:8081').asString();
-const CATALOG_MANAGER_SERVICE_URL = env.get('CATALOG_MANAGER_SERVICE_URL').default('http://localhost:8082').asString();
-
-const WORKSPACE_NAME = env.get('WORKSPACE_NAME').default('polygonParts').asString();
-const DATASTORE_NAME = env.get('DATASTORE_NAME').default('polygonParts').asString();
+const WORKSPACE_NAME = env.get('WORKSPACE_NAME').default('yahalom').asString();
+const DATASTORE_NAME = env.get('DATASTORE_NAME').default('yahalom').asString();
 const GEOSERVER_DATA_DIR = env.get('GEOSERVER_DATA_DIR').default('/data_dir').asString();
 const DATASTORE_PATH = `${GEOSERVER_DATA_DIR}/workspaces/${WORKSPACE_NAME}/${DATASTORE_NAME}`;
 
-const FEATURE_TYPES_STRINGS_BLACK_LIST = env.get('FEATURE_TYPES_STRINGS_BLACK_LIST').default(['*history$']).asJson();
-const FEATURE_TYPES_REGEX_BLACK_LIST = env
-  .get('FEATURE_TYPES_REGEX_BLACK_LIST')
-  .default(['migrations', 'history', 'polygon_parts', 'test_view'])
-  .asJson();
+const FEATURE_TYPES_STRINGS_BLACK_LIST = env.get('FEATURE_TYPES_STRINGS_BLACK_LIST').default(['layer_objects', 'sync_state', 'migrations']).asJson();
+const FEATURE_TYPES_REGEX_BLACK_LIST = env.get('FEATURE_TYPES_REGEX_BLACK_LIST').default(['.*_history$', '.*_valid$']).asJson();
 
 const GEOSERVER_USER = env.get('GEOSERVER_ADMIN_USER').default('admin').asString();
 const GEOSERVER_PASS = env.get('GEOSERVER_ADMIN_PASSWORD').default('geoserver').asString();
-const WORKSPACE_API_URL = `${GEOSERVER_API_BASE_URL}/workspaces`;
-const GEOSERVER_LOCAL_RELOAD_URL = `${GEOSERVER_LOCAL_BASE_URL}/rest/reload`;
-const DATA_STORE_API_URL = `${GEOSERVER_API_BASE_URL}/dataStores/${WORKSPACE_NAME}`;
-const FEATURE_TYPES_API_URL = `${GEOSERVER_API_BASE_URL}/featureTypes/${WORKSPACE_NAME}/${DATASTORE_NAME}`;
-const CATALOG_MANAGER_FIND_URL = `${CATALOG_MANAGER_SERVICE_URL}/records/find`;
 
-const GLOBAL_WFS_SETTING_API_URL = `${GEOSERVER_API_BASE_URL}/services/wfs/settings`;
+const geoServerClient = new GeoServerClient(
+  GEOSERVER_BASE_URL,
+  GEOSERVER_LOCAL_BASE_URL,
+  WORKSPACE_NAME,
+  DATASTORE_NAME,
+  GEOSERVER_USER,
+  GEOSERVER_PASS
+);
 
 // *******************GEOSERVER INITIALIZATION************************************************
 
 //Loop until validate geoserver is up
-await checkGeoserverIsUp();
+try {
+  logger.info({ msg: `Checking if GeoServer is up on ${GEOSERVER_BASE_URL}...` });
+  await checkGeoserverIsUp();
+} catch (error) {
+  logger.error({ msg: `Failed to connect to GeoServer: ${error.message}, ${error}` });
+  throw error;
+}
 
 //set wfs mode
-await setWfsAsBasic();
+try {
+  logger.info({ msg: `Setting WFS service level to BASIC...` });
+  await setWfsAsBasic();
+} catch (error) {
+  logger.error({ msg: `Failed to set WFS service level to BASIC: ${error.message}, ${error}` });
+  throw error;
+}
 
 //check if workspace exists, if it doesnt - create one
-const workspaceExists = await checkWorkspace();
-if (!workspaceExists) {
-  await createWorkspace();
+try {
+  logger.info({ msg: `Checking if workspace ${WORKSPACE_NAME} exists...` });
+  const workspaceExists = await checkWorkspace();
+  if (!workspaceExists) {
+    try {
+      logger.info({ msg: `Workspace ${WORKSPACE_NAME} does not exist. Creating...` });
+      await createWorkspace();
+    } catch (error) {
+      logger.error({ msg: `Failed to create workspace: ${error.message}, ${error}` });
+      throw error;
+    }
+  }
+} catch (error) {
+  logger.error({ msg: `Failed to check workspace existence: ${error.message}, ${error}` });
+  throw error;
 }
 
 //check if dataStore exists, if it doesnt - create one
-const dataStoreExists = await checkDataStore();
-if (!dataStoreExists) {
-  await createDataStore();
+try {
+  logger.info({ msg: `Checking if data store ${DATASTORE_NAME} exists...` });
+  const dataStoreExists = await checkDataStore();
+  if (!dataStoreExists) {
+    try {
+      logger.info({ msg: `Data store ${DATASTORE_NAME} does not exist. Creating...` });
+      await createDataStore();
+    } catch (error) {
+      logger.error({ msg: `Failed to create data store: ${error.message}, ${error}` });
+      throw error;
+    }
+  }
+} catch (error) {
+  logger.error({ msg: `Failed to check data store existence: ${error.message}, ${error}` });
+  throw error;
 }
 
 //check featureLayers and publish them if needed
-await checkFeatureTypes();
+try {
+  logger.info({ msg: `Checking and publishing feature types if needed...` });
+  await checkFeatureTypes();
+} catch (error) {
+  logger.error({ msg: `Failed to check and publish feature types: ${error.message}, ${error}` });
+  throw error;
+}
 
 logger.info({ msg: `Env ready: Completed Geoserver initialization` });
 
@@ -89,7 +128,7 @@ if (await isDataDirExists()) {
       logger.info({ msg: `File removed: ${path}` });
       await reloadGeoServer();
     })
-    .on('ready', () => logger.info('Initial scan complete. Ready for changes'))
+    .on('ready', () => logger.info({ msg: 'Initial scan complete. Ready for changes' }))
     .on('error', (error) => logger.error({ msg: `Watcher error: ${error}` }));
 } else {
   logger.error({ msg: `Data directory ${DATASTORE_PATH} does not exist or is not accessible` });
@@ -99,13 +138,8 @@ if (await isDataDirExists()) {
 
 async function reloadGeoServer() {
   try {
-    logger.info({ msg: `Triggering geoserver reload on ${GEOSERVER_LOCAL_RELOAD_URL}...` });
-    await zx.fetch(`${GEOSERVER_LOCAL_RELOAD_URL}`, {
-      method: 'POST',
-      headers: {
-        Authorization: 'Basic ' + Buffer.from(`${GEOSERVER_USER}:${GEOSERVER_PASS}`).toString('base64'),
-      },
-    });
+    logger.info({ msg: `Triggering geoserver reload on ${GEOSERVER_LOCAL_BASE_URL}/rest/reload...` });
+    await geoServerClient.reloadGeoServer();
   } catch (error) {
     logger.warn({
       msg: `Failed connect to reload geoserver with error ${error}, will retry again`,
@@ -137,9 +171,7 @@ async function isDataDirExists() {
 async function checkGeoserverIsUp() {
   while (true) {
     try {
-      const responseFromGs = await zx.fetch(`${GEOSERVER_BASE_URL}`, {
-        method: 'GET',
-      });
+      const responseFromGs = await geoServerClient.getGeoServerStatus();
       logger.info({
         msg: `Got response from geoserver with status code: ${responseFromGs.status}`,
       });
@@ -158,9 +190,7 @@ async function checkGeoserverIsUp() {
  * Send api to check if the workspace exists
  */
 async function checkWorkspace() {
-  const getWorkspaceResp = await zx.fetch(`${WORKSPACE_API_URL}/${WORKSPACE_NAME}`, {
-    method: 'GET',
-  });
+  const getWorkspaceResp = await geoServerClient.getWorkspace();
 
   logger.info({ msg: await getWorkspaceResp.text() });
 
@@ -175,19 +205,9 @@ async function checkWorkspace() {
 }
 
 async function createWorkspace() {
-  const createWorkspaceBody = {
-    name: WORKSPACE_NAME,
-  };
-
-  const createWorkspaceResp = await zx.fetch(`${WORKSPACE_API_URL}`, {
-    method: 'POST',
-    body: JSON.stringify(createWorkspaceBody),
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
-
-  logger.info({ msg: await createWorkspaceResp.text() });
+  const createWorkspaceResp = await geoServerClient.createWorkspace(WORKSPACE_NAME);
+  const responseText = await createWorkspaceResp.text();
+  logger.info({ msg: responseText });
 
   assertOk(createWorkspaceResp.status === 201);
   logger.info({
@@ -201,11 +221,9 @@ async function createWorkspace() {
  * Send api to check if the workspace exists, if not create one
  */
 async function checkDataStore() {
-  const getDataStoreResp = await zx.fetch(`${DATA_STORE_API_URL}/${DATASTORE_NAME}`, {
-    method: 'GET',
-  });
-
-  logger.debug({ msg: await getDataStoreResp.text() });
+  const getDataStoreResp = await geoServerClient.getDataStore(DATASTORE_NAME);
+  const responseText = await getDataStoreResp.text();
+  logger.info({ msg: responseText });
 
   await zx.sleep(1000);
   if (getDataStoreResp.status === 200) {
@@ -218,17 +236,7 @@ async function checkDataStore() {
 }
 
 async function createDataStore() {
-  const createDataStoreBody = {
-    name: DATASTORE_NAME,
-  };
-
-  const createDataStoreResp = await zx.fetch(`${DATA_STORE_API_URL}`, {
-    method: 'POST',
-    body: JSON.stringify(createDataStoreBody),
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
+  const createDataStoreResp = await geoServerClient.createDataStore(DATASTORE_NAME);
 
   logger.info({ msg: await createDataStoreResp.text() });
 
@@ -248,26 +256,20 @@ async function checkFeatureTypes() {
   const mappedLayerNames = await mapNativeNameToLayerName(availableNames);
 
   if (mappedLayerNames.length === 0) {
-    logger.info(' There are no layers to publish! ');
+    logger.info({ msg: ' There are no layers to publish! ' });
   } else {
     const postRequests = mappedLayerNames.map(async (entity) => {
       try {
-        const response = await zx.fetch(FEATURE_TYPES_API_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ nativeName: entity.nativeName, name: entity.layerName }),
-        });
+        const response = await geoServerClient.createFeatureType({ nativeName: entity.nativeName, name: entity.layerName });
         if (!response.ok) {
           throw new Error(
             `Failed to POST for table:${entity.nativeName} with layerName: ${entity.layerName}: ${response.status} ${response.statusText}`
           );
         }
-        logger.info(`Successfully posted for table:${entity.nativeName} with layerName: ${entity.layerName}`);
+        logger.info({ msg: `Successfully posted for table:${entity.nativeName} with layerName: ${entity.layerName}` });
       } catch (error) {
         // Log detailed error message for the failed request
-        logger.error(`Error posting for table:${entity.nativeName} with layerName: ${entity.layerName}:`, error);
+        logger.error({ msg: `Error posting for table:${entity.nativeName} with layerName: ${entity.layerName}: ${error}` });
         throw error; // Re-throw the error to ensure it is caught by Promise.all
       }
     });
@@ -275,7 +277,7 @@ async function checkFeatureTypes() {
       await Promise.all(postRequests);
       logger.info({ msg: 'All POST requests were successful' });
     } catch (error) {
-      logger.error(`One or more POST requests failed: ${error}`);
+      logger.error({ msg: `One or more POST requests failed: ${error}` });
       throw Error(error);
     }
   }
@@ -286,28 +288,22 @@ async function checkFeatureTypes() {
  * Send api request for global settings - restrict WFS protocol read-only (BASIC)
  */
 async function setWfsAsBasic() {
-  const wfsModeResponse = await zx.fetch(GLOBAL_WFS_SETTING_API_URL, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ serviceLevel: 'BASIC' }),
-  });
+  const wfsModeResponse = await geoServerClient.setWfsServiceLevelToBasic();
 
   logger.info({ msg: await wfsModeResponse.text() });
-  assertEqual(wfsModeResponse.status, 200);
+  assertOk(wfsModeResponse.status === 200);
   logger.info({
     msg: `Set WFS service level into 'BASIC' - read only mode with status code: ${wfsModeResponse.status}`,
   });
 }
 
 async function getAvailableFeatureTypes() {
-  const listAvailableParams = new URLSearchParams();
-  listAvailableParams.append('list', 'available');
-  const getAvailableFeatureTypes = await zx.fetch(`${FEATURE_TYPES_API_URL}?` + listAvailableParams, {
-    method: 'GET',
-  });
-  const availableLayers = await getAvailableFeatureTypes.json();
+  try {
+    const availableLayers = await geoServerClient.getFeatureTypes('available');
+  } catch (error) {
+    logger.error({ msg: `Error fetching available feature types: ${error.message}, ${error}` });
+    throw error; // Re-throw the error to ensure it is caught by the caller
+  }
   const availableNames = availableLayers
     .filter((layer) => {
       const isInBlacklist = FEATURE_TYPES_STRINGS_BLACK_LIST.includes(layer.name);
@@ -321,12 +317,7 @@ async function getAvailableFeatureTypes() {
 }
 
 async function getConfiguredFeatureTypes() {
-  const listConfiguredParams = new URLSearchParams();
-  listConfiguredParams.append('list', 'configured');
-  const getConfiguredFeatureTypes = await zx.fetch(`${FEATURE_TYPES_API_URL}?` + listConfiguredParams, {
-    method: 'GET',
-  });
-  const configuredLayers = await getConfiguredFeatureTypes.json();
+  const configuredLayers = await geoServerClient.getFeatureTypes('configured');
   const configuredNames = configuredLayers.map((layer) => layer.name);
 
   logger.debug({ msg: `configuredNames: ${configuredNames}` });
@@ -335,27 +326,16 @@ async function getConfiguredFeatureTypes() {
 }
 
 async function mapNativeNameToLayerName(availableNames) {
-  const configuredLayers = await getConfiguredFeatureTypes();
+  try {
+    const configuredLayers = await getConfiguredFeatureTypes();
+  } catch (error) {
+    logger.error({ msg: `Error fetching configured feature types: ${error.message}, ${error}` });
+    throw error; // Re-throw the error to ensure it is caught by the caller
+  }
   const layersMapping = await Promise.all(
     availableNames.map(async (nativeName) => {
-      const { productId, productType } = splitProductIdAndType(nativeName);
+      const layerName = splitNativeLayer(nativeName);
       try {
-        const response = await zx.fetch(CATALOG_MANAGER_FIND_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ metadata: { productId, productType } }),
-        });
-        const layerDetails = await response.json();
-        if (layerDetails.length !== 1) {
-          throw new Error(`Expected exactly one result for ${nativeName}, but got ${layerDetails.length}`);
-        }
-        const fetchedProductId = layerDetails[0].metadata.productId;
-        const fetchedProductType = layerDetails[0].metadata.productType;
-
-        const layerName = `${fetchedProductId}-${fetchedProductType}`;
-
         /* getAvailable returns the tableNames. 
       Due to the fact that we are publishing the features in a different name from 
       the tableName, the available returns  some already published layers
@@ -365,7 +345,7 @@ async function mapNativeNameToLayerName(availableNames) {
         }
         return undefined;
       } catch (error) {
-        logger.error(`Error processing ${nativeName}: ${error.message}`);
+        logger.error({ msg: `Error processing ${nativeName}: ${error.message}` });
         return undefined;
       }
     })
@@ -374,13 +354,12 @@ async function mapNativeNameToLayerName(availableNames) {
   return layersMapping.filter((result) => result);
 }
 
-function splitProductIdAndType(name) {
-  const lastUnderscoreIndex = name.lastIndexOf('_');
+function splitNativeLayer(name) {
+  const lastUnderscoreIndex = name.indexOf('_');
 
-  const productId = name.slice(0, lastUnderscoreIndex);
-  const productType = findProductType(name.slice(lastUnderscoreIndex + 1));
-
-  return { productId, productType };
+  name.slice(0, lastUnderscoreIndex);
+  const layerName = name.slice(lastUnderscoreIndex + 1);
+  return layerName;
 }
 
 function findProductType(input) {
