@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/MapColonies/geoserver-wfs-yahalom/compare/v1.0.0...v1.0.1) (2026-07-09)
+
+
+### Bug Fixes
+
+* fix domain to 3d ([#3](https://github.com/MapColonies/geoserver-wfs-yahalom/issues/3)) ([ef2a485](https://github.com/MapColonies/geoserver-wfs-yahalom/commit/ef2a4858d4cde0312485288dc6c9437859c7d8ea))
+
 ## 1.0.0 (2026-07-09)
 
 
