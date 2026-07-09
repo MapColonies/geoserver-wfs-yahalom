@@ -233,7 +233,7 @@ nginx:
 
   authorization:
     enabled: true
-    domain: 'raster'
+    domain: '3d'
     url: http://opa-service.infra-services/v1/data/http/authz/decision
 
   extraVolumes:
@@ -263,7 +263,7 @@ nginx:
     enabled: true
     routesMapping:
     - host:
-      path: /api/raster/v1
+      path: /api/3d/v1
     rewriteTarget: "/geoserver"
     timeout:
       enabled: false # defaults to 30s by openshift
@@ -280,7 +280,7 @@ nginx:
     ingressClassName: ''
     ingressMapping:
     - host: 'localhost'
-      path: /api/raster/v1
+      path: /api/3d/v1
       pathType: Prefix
     tls:
       enabled: true

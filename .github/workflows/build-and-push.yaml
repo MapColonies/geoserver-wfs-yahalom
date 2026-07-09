@@ -20,7 +20,7 @@ jobs:
         id: build
         uses: MapColonies/shared-workflows/actions/build-docker@build-docker-v1.1.0
         with:
-          domain: raster
+          domain: 3d
           registry: ${{ secrets.ACR_URL }}
 
       - name: Push Docker Image
@@ -33,13 +33,13 @@ jobs:
         uses: MapColonies/shared-workflows/actions/build-and-push-helm@build-and-push-helm-v1.0.1
         with:
           context: ./helm
-          domain: raster
+          domain: 3d
           registry: ${{ secrets.ACR_URL }}
 
       - name: Update Artifacts File- Docker
         uses: MapColonies/shared-workflows/actions/update-artifacts-file@update-artifacts-file-v1.1.1
         with:
-          domain: raster
+          domain: 3d
           artifact_name: ${{ github.event.repository.name }}
           artifact_tag: ${{ github.ref_name }}
           type: docker
@@ -49,7 +49,7 @@ jobs:
       - name: Update Artifacts File- Helm
         uses: MapColonies/shared-workflows/actions/update-artifacts-file@update-artifacts-file-v1.1.1
         with:
-          domain: raster
+          domain: 3d
           artifact_name: ${{ github.event.repository.name }}
           artifact_tag: ${{ github.ref_name }}
           type: helm
