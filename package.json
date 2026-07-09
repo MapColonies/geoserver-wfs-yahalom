@@ -1,6 +1,6 @@
 {
   "name": "yahalom-geoserver-side-car",
-  "version": "3.1.0",
+  "version": "1.0.0",
   "description": "this utility create initial geoserver connection & set yahalom layers mappings",
   "main": "./src/index.mjs",
   "scripts": {
