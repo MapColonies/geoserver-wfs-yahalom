@@ -47,7 +47,7 @@ updateInterval: 10000
 replicaCount: 1
 
 nameOverride:
-fullnameOverride: yahalom-geoserver
+fullnameOverride: layers-wfs-geoserver
 
 initialMemory: "128M"
 maxMemory: "756M"
@@ -174,7 +174,8 @@ sideCar:
 nginx:
   enabled: true
   replicaCount: 1
-  fullnameOverride: ""
+  fullnameOverride: 
+  nameOverride: layers-wfs-geoserver-nginx
   image:
     repository: common/nginx
   mclabels:
@@ -195,14 +196,14 @@ nginx:
   clientMaxBodySize: 50m
 
   opentelemetry:
-    serviceName: pp-geoserver-nginx
+    serviceName: layers-wfs-geoserver-nginx
     exporterHost: infra-otel.infra-services
     exporterPort: 4317
     samplerMethod: "AlwaysOff"
     ratio: 10
 
   backend:
-    host: pp-geoserver-service
+    host: layers-wfs-geoserver-service
     port: 80
     
   prometheusExporter:
