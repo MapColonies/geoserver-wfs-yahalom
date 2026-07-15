@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.3](https://github.com/MapColonies/geoserver-wfs-yahalom/compare/v1.0.2...v1.0.3) (2026-07-15)
+
+
+### Bug Fixes
+
+* fix logs ([#7](https://github.com/MapColonies/geoserver-wfs-yahalom/issues/7)) ([856339b](https://github.com/MapColonies/geoserver-wfs-yahalom/commit/856339b413db612a0d7b8476dff9dff6c49d67b4))
+
 ## [1.0.2](https://github.com/MapColonies/geoserver-wfs-yahalom/compare/v1.0.1...v1.0.2) (2026-07-15)
 
 
