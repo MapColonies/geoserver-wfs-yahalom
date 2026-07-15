@@ -18,7 +18,7 @@ const logger = jsLogger.default({
 
 const GEOSERVER_LOCAL_PORT = '8080'; // Default port for local GeoServer instance, hard coded in deployment.yaml containerPort
 const POLLING_INTERVAL_MS = env.get('POLLING_INTERVAL_MS').default(3000).asIntPositive(); // Polling interval in milliseconds
-const GEOSERVER_BASE_URL = env.get('GEOSERVER_BASE_URL').default('https://query-3d-dev.mapcolonies.net/api/yahalom/v1/layers').asString();
+const GEOSERVER_BASE_URL = env.get('GEOSERVER_BASE_URL').default('localhost').asString();
 const GEOSERVER_LOCAL_BASE_URL = `http://localhost:${GEOSERVER_LOCAL_PORT}/geoserver`;
 
 const WORKSPACE_NAME = env.get('WORKSPACE_NAME').default('yahalom').asString();
