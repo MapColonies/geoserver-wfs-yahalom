@@ -1,7 +1,6 @@
 import * as zx from 'zx';
 
 export class GeoServerClient {
-
   constructor(geoserverBaseUrl, geoserverLocalBaseUrl, workspaceName, dataStoreName, user, password, logger) {
     this.workspaceName = workspaceName;
     this.dataStoreName = dataStoreName;
