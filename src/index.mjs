@@ -48,7 +48,8 @@ const geoServerClient = new GeoServerClient(
   WORKSPACE_NAME,
   DATASTORE_NAME,
   GEOSERVER_USER,
-  GEOSERVER_PASS
+  GEOSERVER_PASS,
+  logger
 );
 
 // *******************GEOSERVER INITIALIZATION************************************************

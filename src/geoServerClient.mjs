@@ -1,7 +1,7 @@
 import * as zx from 'zx';
 
 export class GeoServerClient {
-  constructor(geoserverBaseUrl, geoserverLocalBaseUrl, workspaceName, dataStoreName, user, password) {
+  constructor(geoserverBaseUrl, geoserverLocalBaseUrl, workspaceName, dataStoreName, user, password, logger) {
     this.workspaceName = workspaceName;
     this.dataStoreName = dataStoreName;
     this.authHeader = 'Basic ' + Buffer.from(`${user}:${password}`).toString('base64');
@@ -11,6 +11,7 @@ export class GeoServerClient {
     this.featureTypesApiUrl = `${this.dataStoreApiUrl}/${dataStoreName}/featuretypes`;
     this.globalWfsSettingApiUrl = `${this.restApiBaseUrl}/services/wfs/settings`;
     this.geoserverLocalReloadUrl = `${geoserverLocalBaseUrl}/rest/reload`;
+    this.logger = logger;
   }
 
   async getGeoServerStatus() {
@@ -139,6 +140,7 @@ export class GeoServerClient {
   }
 
   async #request(url, options = {}) {
+    this.logger.info({ msg: `Making request to ${url} with options: ${JSON.stringify(options)}` });
     const headers = {
       Authorization: this.authHeader,
       ...(options.headers ?? {}),
