@@ -96,9 +96,9 @@ export class GeoServerClient {
 
     const params = new URLSearchParams();
     params.append('list', listType);
-    const response = await this.#request(`${this.featureTypesApiUrl}?${params.toString()}`, { 
+    const response = await this.#request(`${this.featureTypesApiUrl}?${params.toString()}`, {
       method: 'GET',
-      headers: { 'Accept': 'application/json' },
+      headers: { Accept: 'application/json' },
     });
     const jsonResponse = await response.json();
     const featureTypes = this.GetFeatureTypesResponse(listType, jsonResponse);
@@ -115,21 +115,21 @@ export class GeoServerClient {
         link: feature.href,
       }));
     }
-     // else 
+    // else
     if (!geoserverResponse.list.string) {
       return [];
     }
     return geoserverResponse.list.string.map((featureName) => ({
       name: featureName,
     }));
-  };
+  }
 
   async createFeatureType(body) {
     const normalizedBody = body?.featureType ? body : { featureType: body };
 
     return this.#request(this.featureTypesApiUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify(normalizedBody),
     });
   }

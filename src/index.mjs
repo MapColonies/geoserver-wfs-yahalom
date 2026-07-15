@@ -311,12 +311,12 @@ async function getAvailableFeatureTypes() {
   try {
     const availableLayers = await geoServerClient.getFeatureTypes('available');
     const availableNames = availableLayers
-    .filter((layer) => {
-      const isInBlacklist = FEATURE_TYPES_STRINGS_BLACK_LIST.includes(layer.name);
-      const matchesRegexBlacklist = FEATURE_TYPES_REGEX_BLACK_LIST.some((regex) => new RegExp(regex).test(layer.name));
-      return !isInBlacklist && !matchesRegexBlacklist;
-    })
-    .map((layer) => layer.name);
+      .filter((layer) => {
+        const isInBlacklist = FEATURE_TYPES_STRINGS_BLACK_LIST.includes(layer.name);
+        const matchesRegexBlacklist = FEATURE_TYPES_REGEX_BLACK_LIST.some((regex) => new RegExp(regex).test(layer.name));
+        return !isInBlacklist && !matchesRegexBlacklist;
+      })
+      .map((layer) => layer.name);
     logger.info({ msg: `availableNames: ${availableNames}` });
     await zx.sleep(1000);
     return availableNames;
