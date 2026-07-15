@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.2](https://github.com/MapColonies/geoserver-wfs-yahalom/compare/v1.0.1...v1.0.2) (2026-07-15)
+
+
+### Bug Fixes
+
+* Fix workflow domain & wfs data store config ([#5](https://github.com/MapColonies/geoserver-wfs-yahalom/issues/5)) ([c17b583](https://github.com/MapColonies/geoserver-wfs-yahalom/commit/c17b583a4317d182d3e26f8262b7eeb60a016950))
+
 ## [1.0.1](https://github.com/MapColonies/geoserver-wfs-yahalom/compare/v1.0.0...v1.0.1) (2026-07-09)
 
 
