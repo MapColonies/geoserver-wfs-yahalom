@@ -6,7 +6,6 @@ global:
   metrics: {}
   storage: {}
   geoserver: {}
-  serviceUrls: {}
 
 mclabels:
   #environment: development
@@ -51,6 +50,7 @@ fullnameOverride: layers-wfs-geoserver
 
 initialMemory: "128M"
 maxMemory: "756M"
+geoserverUrl:
 
 storage:
   fs:
@@ -65,11 +65,16 @@ geoserver:
     password: ""
     username: ""
   workspace: ""
-  dataStore: ""
-serviceUrls:
-  geoserverUrl: ""
-  geoserverApiUrl: ""
-  catalogManager: ""
+  dataStore:
+    name: ""
+    host: ""
+    port: "5432"
+    dbName: ""
+    username: "postgres"
+    password: "postgres"
+    dbType: "postgis"
+    schema: "public"
+    sslMode: "DISABLE"
 
 readiness:
   path: "/geoserver" # change it according to workspace name changing

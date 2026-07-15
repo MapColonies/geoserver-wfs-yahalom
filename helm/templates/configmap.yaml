@@ -1,8 +1,6 @@
 {{- $chartName := include "geoserver.name" . -}}
-{{- $db := (include "common.db.merged" .) | fromYaml }}
 {{- $fs := (include "common.fs.merged" .) | fromYaml }}
 {{- $geoserver := (include "common.geoserver.merged" .) | fromYaml }}
-{{- $serviceUrls := (include "common.serviceUrls.merged" .) | fromYaml }}
 {{- $tracing := (include "common.tracing.merged" .) | fromYaml }}
 {{- $metrics := (include "common.metrics.merged" .) | fromYaml }}
 
@@ -20,9 +18,17 @@ data:
   MAX_MEMORY: {{ .Values.maxMemory | default "756M" | quote }}
   GEOSERVER_DATA_DIR: {{ $fs.internalPvc.mountPath | quote }}
   POLLING_INTERVAL_MS: {{ .Values.sideCar.env.pollingIntervalMs | default 3000 | quote }}
-  GEOSERVER_BASE_URL: {{ $serviceUrls.geoserverUrl | quote }}
+  GEOSERVER_BASE_URL: {{ .Values.geoserverUrl | quote }}
   WORKSPACE_NAME: {{ $geoserver.workspace | quote }}
-  DATASTORE_NAME: {{ $geoserver.dataStore | quote }}
+  DATASTORE_NAME: {{ $geoserver.dataStore.name | quote }}
+  DATASTORE_USERNAME: {{ $geoserver.dataStore.username | quote }}
+  DATASTORE_PASSWORD: {{ $geoserver.dataStore.password | quote }}
+  DATASTORE_HOST: {{ $geoserver.dataStore.host | quote }}
+  DATASTORE_PORT: {{ $geoserver.dataStore.port | quote }}
+  DATASTORE_SCHEMA: {{ $geoserver.dataStore.schema | quote }}
+  DATASTORE_DB_NAME: {{ $geoserver.dataStore.dbName | quote }}
+  DATASTORE_TYPE: {{ $geoserver.dataStore.dbType | quote }}
+  DATASTORE_SSL_MODE: {{ $geoserver.dataStore.sslMode | quote }}
   FEATURE_TYPES_STRINGS_BLACK_LIST: {{ .Values.sideCar.env.featureTypesBlackLists.tableNameStrings | toJson | quote }}
   FEATURE_TYPES_REGEX_BLACK_LIST: {{ .Values.sideCar.env.featureTypesBlackLists.tableNamesRegex | toJson | quote }}
   PGAPPNAME: {{ $chartName }}

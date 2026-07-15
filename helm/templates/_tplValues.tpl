@@ -62,10 +62,6 @@ Custom definitions
 {{- include "common.tplvalues.merge" ( dict "values" ( list .Values.geoserver .Values.global.geoserver ) "context" . ) }}
 {{- end -}}
 
-{{- define "common.serviceUrls.merged" -}}
-{{- include "common.tplvalues.merge" ( dict "values" ( list .Values.serviceUrls .Values.global.serviceUrls ) "context" . ) }}
-{{- end -}}
-
 {{- define "common.tracing.merged" -}}
 {{- include "common.tplvalues.merge" ( dict "values" ( list .Values.tracing .Values.global.tracing ) "context" . ) }}
 {{- end -}}
