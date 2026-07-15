@@ -18,11 +18,21 @@ const logger = jsLogger.default({
 
 const GEOSERVER_LOCAL_PORT = '8080'; // Default port for local GeoServer instance, hard coded in deployment.yaml containerPort
 const POLLING_INTERVAL_MS = env.get('POLLING_INTERVAL_MS').default(3000).asIntPositive(); // Polling interval in milliseconds
-const GEOSERVER_BASE_URL = env.get('GEOSERVER_BASE_URL').default('https://localhost/geoserver').asString();
+const GEOSERVER_BASE_URL = env.get('GEOSERVER_BASE_URL').default('https://query-3d-dev.mapcolonies.net/api/yahalom/v1/layers').asString();
 const GEOSERVER_LOCAL_BASE_URL = `http://localhost:${GEOSERVER_LOCAL_PORT}/geoserver`;
 
 const WORKSPACE_NAME = env.get('WORKSPACE_NAME').default('yahalom').asString();
 const DATASTORE_NAME = env.get('DATASTORE_NAME').default('yahalom').asString();
+const DATASTORE_BODY = {
+  username: env.get('DATASTORE_USERNAME').default('postgres').asString(),
+  password: env.get('DATASTORE_PASSWORD').default('postgres').asString(),
+  host: env.get('DATASTORE_HOST').default('127.0.0.1').asString(),
+  port: env.get('DATASTORE_PORT').default(5432).asIntPositive(),
+  schema: env.get('DATASTORE_SCHEMA').default('public').asString(),
+  dbName: env.get('DATASTORE_DB_NAME').default('test').asString(),
+  dbType: env.get('DATASTORE_TYPE').default('postgis').asString(),
+  sslMode: env.get('DATASTORE_SSL_MODE').default('DISABLE').asString(),
+};
 const GEOSERVER_DATA_DIR = env.get('GEOSERVER_DATA_DIR').default('/data_dir').asString();
 const DATASTORE_PATH = `${GEOSERVER_DATA_DIR}/workspaces/${WORKSPACE_NAME}/${DATASTORE_NAME}`;
 
@@ -236,7 +246,7 @@ async function checkDataStore() {
 }
 
 async function createDataStore() {
-  const createDataStoreResp = await geoServerClient.createDataStore(DATASTORE_NAME);
+  const createDataStoreResp = await geoServerClient.createDataStore(DATASTORE_NAME, DATASTORE_BODY);
 
   logger.info({ msg: await createDataStoreResp.text() });
 
@@ -300,20 +310,20 @@ async function setWfsAsBasic() {
 async function getAvailableFeatureTypes() {
   try {
     const availableLayers = await geoServerClient.getFeatureTypes('available');
-  } catch (error) {
-    logger.error({ msg: `Error fetching available feature types: ${error.message}, ${error}` });
-    throw error; // Re-throw the error to ensure it is caught by the caller
-  }
-  const availableNames = availableLayers
+    const availableNames = availableLayers
     .filter((layer) => {
       const isInBlacklist = FEATURE_TYPES_STRINGS_BLACK_LIST.includes(layer.name);
       const matchesRegexBlacklist = FEATURE_TYPES_REGEX_BLACK_LIST.some((regex) => new RegExp(regex).test(layer.name));
       return !isInBlacklist && !matchesRegexBlacklist;
     })
     .map((layer) => layer.name);
-  logger.info({ msg: `availableNames: ${availableNames}` });
-  await zx.sleep(1000);
-  return availableNames;
+    logger.info({ msg: `availableNames: ${availableNames}` });
+    await zx.sleep(1000);
+    return availableNames;
+  } catch (error) {
+    logger.error({ msg: `Error fetching available feature types: ${error.message}, ${error}` });
+    throw error; // Re-throw the error to ensure it is caught by the caller
+  }
 }
 
 async function getConfiguredFeatureTypes() {
@@ -326,8 +336,9 @@ async function getConfiguredFeatureTypes() {
 }
 
 async function mapNativeNameToLayerName(availableNames) {
+  let configuredLayers;
   try {
-    const configuredLayers = await getConfiguredFeatureTypes();
+    configuredLayers = await getConfiguredFeatureTypes();
   } catch (error) {
     logger.error({ msg: `Error fetching configured feature types: ${error.message}, ${error}` });
     throw error; // Re-throw the error to ensure it is caught by the caller
