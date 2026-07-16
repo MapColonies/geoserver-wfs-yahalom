@@ -1,47 +1,47 @@
-# Helm suite for complete geoserver - WFS for sync-layrs
+# Helm suite for complete Geoserver - WFS for sync-layers
 [Home](../README.md)
-* The helm provides ready to use polygon parts serving by WFS protocol
-* The initialization use side car to prepare the geoserver to be ready to uses with all relevant data
+* The helm provides ready-to-use [layers](https://github.com/MapColonies/sync-layer-server) serving by WFS protocol
+* The initialization use side car to prepare the Geoserver to be ready to use all relevant data
 * Based on [kartoza/helm for geoserver](https://github.com/kartoza/charts/tree/develop/charts/geoserver/v0.3.3)
-* Use kartoza based geoserver images [geoserver-os from mapcolonies github](https://github.com/MapColonies/geoserver)
+* Use kartoza-based Geoserver images [geoserver-os from mapcolonies github](https://github.com/MapColonies/geoserver)
 
 ## Main Features
 
 ### Layer Auto-Config 
-* On deploy, once geoserver api is up, side-car will run and configure the WFS layer definitions.
-* Readiness will be valid when it detects the featureDescribe of the polygon parts layer.
+* On deploy, once geoserver rest api is up, the sidecar will run and configure the WFS layer definitions.
+* Readiness will be valid when it detects the featureDescribe of the layers.
 
 ### B2B Support
-* Deployment includes infra-nginx sub-chart to handle authentication and routing
+* Deployment includes an infra-nginx sub-chart to handle authentication and routing
 
 > [!IMPORTANT]
-> PROXY_BASE_URL must be changed according to deployed route.
+> PROXY_BASE_URL must be changed according to the deployed route.
 
 
 ## Deployment
 
-1. create charts:
+1. Create charts:
 ```bash
 helm dependency build .
 ```
-2. deploy:
+2. Deploy:
 ```bash
 helm install deployment-name .
 ```
 
 > [!CAUTION]
-> Validate route section at values false if you deploy with nginx.
+> Validate the route section in values as false if you deploy with nginx.
 
 
 ## Dev-local mode
-1. configure route on .Value level to true
+1. Configure route on. Value level to true
 ```yaml
 route:
   enabled: true
   tls: false
   path: /geoserver
 ```
-2. configure PROXY_BASE_URL:
+2. Configure PROXY_BASE_URL:
 ```yaml
 extraGeoserverEnv: |
   - name: COMMUNITY_EXTENSIONS
@@ -51,7 +51,7 @@ extraGeoserverEnv: |
   - name: PROXY_BASE_URL
     value: /geoserver
 ```
-3. validate nginx scope disables:
+3. Validate the nginx scope is disabled:
 ```yaml
 nginx:
   enabled: false
