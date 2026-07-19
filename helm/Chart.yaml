@@ -1,8 +1,8 @@
 apiVersion: v2
 name: geoserver-wfs-yahalom
 type: application
-version: 1.0.3
-appVersion: 1.0.3
+version: 1.0.4
+appVersion: 1.0.4
 description: Chart for yahalom WFS geoserver in openshift
 dependencies:
   - name: nginx
