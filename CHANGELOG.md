@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.4](https://github.com/MapColonies/geoserver-wfs-yahalom/compare/v1.0.3...v1.0.4) (2026-07-19)
+
+
+### Bug Fixes
+
+* rename chart name ([#11](https://github.com/MapColonies/geoserver-wfs-yahalom/issues/11)) ([469774a](https://github.com/MapColonies/geoserver-wfs-yahalom/commit/469774aa9ac97e9bb5529f7458945a11c3cef50e))
+
 ## [1.0.3](https://github.com/MapColonies/geoserver-wfs-yahalom/compare/v1.0.2...v1.0.3) (2026-07-15)
 
 
