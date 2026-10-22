@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.5](https://github.com/MapColonies/geoserver-wfs-yahalom/compare/v1.0.4...v1.0.5) (2026-10-22)
+
+
+### Bug Fixes
+
+* fix log scraping and update nginx version ([#13](https://github.com/MapColonies/geoserver-wfs-yahalom/issues/13)) ([21fc219](https://github.com/MapColonies/geoserver-wfs-yahalom/commit/21fc21918406766b6a57471e150d90e14a0d0181))
+
 ## [1.0.4](https://github.com/MapColonies/geoserver-wfs-yahalom/compare/v1.0.3...v1.0.4) (2026-07-19)
 
 
