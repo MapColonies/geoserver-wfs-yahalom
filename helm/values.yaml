@@ -187,13 +187,14 @@ nginx:
     gisDomain: 3d
     partOf: yahalom-serving
     owner: 3d
-  extensions:
-    server:
-      enabled: true
-      fileName: geoserver-server.conf
-    location:
-      enabled: true
-      fileName: geoserver-location.conf
+  nginx:
+    extensions:
+      server:
+        enabled: true
+        fileName: geoserver-server.conf
+      location:
+        enabled: true
+        fileName: geoserver-location.conf
   port: 8080
   internalServicePort: 80
   targetPort: 8080
