@@ -122,15 +122,15 @@ resources:
     cpu: 2
     memory: 4500Mi
   requests:
-    cpu: 2
+    cpu: 0.5
     memory: 4000Mi
 
 sidecarResources:
   limits:
-    cpu: 100m
+    cpu: 200m
     memory: 128Mi
   requests:
-    cpu: 100m
+    cpu: 50m
     memory: 128Mi
 
 service:
@@ -216,9 +216,9 @@ nginx:
     enabled: true
     image:
       # -- Docker image name for the Prometheus exporter
-      repository: common/nginx/nginx-prometheus-exporter
+      repository: common/nginx-prometheus-exporter
       # -- Docker image tag for the Prometheus exporter
-      tag: latest
+      tag: 1.5.1
       # -- Image pull policy for the Prometheus exporter
       pullPolicy: IfNotPresent
     resources:
@@ -227,12 +227,12 @@ nginx:
       value:
         limits:
           # -- CPU limit for the main container
-          cpu: 100m
+          cpu: 300m
           # -- Memory limit for the main container
           memory: 128Mi
         requests:
           # -- CPU request for the main container
-          cpu: 100m
+          cpu: 75m
           # -- Memory request for the main container
           memory: 128Mi    
 
@@ -258,10 +258,10 @@ nginx:
     enabled: true
     value:
       limits:
-        cpu: 100m
+        cpu: 300m
         memory: 128Mi
       requests:
-        cpu: 100m
+        cpu: 75m
         memory: 128Mi
 
   route:
