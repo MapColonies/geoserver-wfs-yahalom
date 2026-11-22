@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.6](https://github.com/MapColonies/geoserver-wfs-yahalom/compare/v1.0.5...v1.0.6) (2026-11-22)
+
+
+### Helm Changes
+
+* enable default resources so cpu limit is 4x request (MAPCO-11865) ([#15](https://github.com/MapColonies/geoserver-wfs-yahalom/issues/15)) ([1c76da9](https://github.com/MapColonies/geoserver-wfs-yahalom/commit/1c76da9cb34abc49fb67b3de178185c624970752))
+
 ## [1.0.5](https://github.com/MapColonies/geoserver-wfs-yahalom/compare/v1.0.4...v1.0.5) (2026-10-22)
 
 
