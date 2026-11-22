@@ -117,7 +117,7 @@ annotations: {}
 podAnnotations: {}
 
 resources:
-  enabled: false
+  enabled: true
   limits:
     cpu: 2
     memory: 4500Mi
